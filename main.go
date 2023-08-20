@@ -7,8 +7,6 @@ import (
 	"net/http"
 )
 
-var name = "Tom"
-
 type Response struct {
 	QUOTE  string
 	AUTHOR string
@@ -28,12 +26,15 @@ func main() {
 	fmt.Printf("Server is running on port %d...\n", port)
 	err := http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
 	if err != nil {
-		errors.New("Error starting server")
+		err1 := errors.New("error starting server")
+		if err1 != nil {
+			fmt.Println("Error starting server")
+		}
 	}
 }
 
 func enableCors(w *http.ResponseWriter) {
-	(*w).Header().Set("Access-Control-Allow-Origin", "192.168.10.143:8080")
+	(*w).Header().Set("Access-Control-Allow-Origin", "*")
 }
 
 func getRandomQuote(w http.ResponseWriter, r *http.Request) {
@@ -63,7 +64,8 @@ func getRandomQuote(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(data[0].QUOTE)
+	err2 := json.NewEncoder(w).Encode(data[0].QUOTE)
+	if err2 != nil {
+		fmt.Println("Error encoding JSON\n" + err2.Error())
+	}
 }
-
-// Path: tom/golang-test/main_test.go
