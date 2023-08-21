@@ -55,11 +55,11 @@ func getRandomQuote(w http.ResponseWriter, r *http.Request) {
 	var data []Response
 	err1 := json.NewDecoder(resp.Body).Decode(&data)
 	if err1 != nil {
-		message := "Error creating JSON decoder:"
+		message := "Error creating JSON decoder"
 		fmt.Println(message, err1.Error())
 	}
 	w.Header().Set("Content-Type", "application/json")
-	err2 := json.NewEncoder(w).Encode(data[0].QUOTE)
+	err2 := json.NewEncoder(w).Encode(data[0])
 	if err2 != nil {
 		message := "Error encoding JSON\n"
 		fmt.Println(message, err2.Error())
