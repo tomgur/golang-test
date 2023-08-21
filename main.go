@@ -13,14 +13,6 @@ type Response struct {
 }
 
 func main() {
-	//greeting, err := greetings.Hello(name)
-	//author, quote := greetings.GetRandomQuote()
-	//if err != nil {
-	//	panic(err)
-	//}
-	//if author == "" && quote == "" {
-	//	panic("Error getting quote")
-	//}
 	http.HandleFunc("/random-quote", getRandomQuote)
 	port := 8080
 	fmt.Printf("Server is running on port %d...\n", port)
@@ -28,13 +20,15 @@ func main() {
 	if err != nil {
 		err1 := errors.New("error starting server")
 		if err1 != nil {
-			fmt.Println("Error starting server")
+			fmt.Println("error starting server")
 		}
 	}
 }
 
 func enableCors(w *http.ResponseWriter) {
-	(*w).Header().Set("Access-Control-Allow-Origin", "*")
+	(*w).Header().Set("Access-Control-Allow-Origin", "http://192.168.10.143:3000")
+	(*w).Header().Set("Access-Control-Allow-Methods", "GET")
+	(*w).Header().Set("Access-Control-Allow-Headers", "Content-Type")
 }
 
 func getRandomQuote(w http.ResponseWriter, r *http.Request) {
@@ -55,17 +49,19 @@ func getRandomQuote(w http.ResponseWriter, r *http.Request) {
 	resp, err := client.Do(req)
 	if err != nil {
 		message := "Error sending HTTP request:"
-		fmt.Println(message, err)
+		fmt.Println(message, err.Error())
 		return
 	}
 	var data []Response
 	err1 := json.NewDecoder(resp.Body).Decode(&data)
 	if err1 != nil {
-		return
+		message := "Error creating JSON decoder:"
+		fmt.Println(message, err1.Error())
 	}
 	w.Header().Set("Content-Type", "application/json")
 	err2 := json.NewEncoder(w).Encode(data[0].QUOTE)
 	if err2 != nil {
-		fmt.Println("Error encoding JSON\n" + err2.Error())
+		message := "Error encoding JSON\n"
+		fmt.Println(message, err2.Error())
 	}
 }
