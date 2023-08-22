@@ -26,7 +26,7 @@ func main() {
 }
 
 func enableCors(w *http.ResponseWriter) {
-	(*w).Header().Set("Access-Control-Allow-Origin", "http://192.168.10.143:3000")
+	(*w).Header().Set("Access-Control-Allow-Origin", "*")
 	(*w).Header().Set("Access-Control-Allow-Methods", "GET")
 	(*w).Header().Set("Access-Control-Allow-Headers", "Content-Type")
 }
@@ -57,6 +57,15 @@ func getRandomQuote(w http.ResponseWriter, r *http.Request) {
 	if err1 != nil {
 		message := "Error creating JSON decoder"
 		fmt.Println(message, err1.Error())
+	}
+	if len(data) > 0 {
+		for i := 0; i < len(data); i++ {
+			fmt.Println("quote: ", data[i].QUOTE)
+			fmt.Println("author: ", data[i].AUTHOR)
+		}
+	} else {
+		message := "No data found"
+		fmt.Println(message)
 	}
 	w.Header().Set("Content-Type", "application/json")
 	err2 := json.NewEncoder(w).Encode(data[0])
