@@ -2,26 +2,27 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 )
 
 type Response struct {
-	QUOTE  string
-	AUTHOR string
+	QUOTE    string
+	AUTHOR   string
+	CATEGORY string
+}
+
+type BitcoinResponse struct {
+	PRICE string
 }
 
 func main() {
-	http.HandleFunc("/random-quote", getRandomQuote)
 	port := 8080
+	http.HandleFunc("/random-quote", getRandomQuote)
 	fmt.Printf("Server is running on port %d...\n", port)
 	err := http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
 	if err != nil {
-		err1 := errors.New("error starting server")
-		if err1 != nil {
-			fmt.Println("error starting server")
-		}
+		fmt.Println("error starting server")
 	}
 }
 
@@ -34,7 +35,7 @@ func enableCors(w *http.ResponseWriter) {
 func getRandomQuote(w http.ResponseWriter, r *http.Request) {
 	enableCors(&w)
 	client := &http.Client{}
-	req, err := http.NewRequest("GET", "https://api.api-ninjas.com/v1/quotes?category=happiness", nil)
+	req, err := http.NewRequest("GET", "https://api.api-ninjas.com/v1/quotes", nil)
 	if err != nil {
 		message := "Error creating HTTP request:"
 		fmt.Println(message, err)
@@ -56,12 +57,13 @@ func getRandomQuote(w http.ResponseWriter, r *http.Request) {
 	err1 := json.NewDecoder(resp.Body).Decode(&data)
 	if err1 != nil {
 		message := "Error creating JSON decoder"
-		fmt.Println(message, err1.Error())
+		fmt.Println(message, err.Error())
 	}
 	if len(data) > 0 {
 		for i := 0; i < len(data); i++ {
 			fmt.Println("quote: ", data[i].QUOTE)
 			fmt.Println("author: ", data[i].AUTHOR)
+			fmt.Println("category: ", data[i].CATEGORY)
 		}
 	} else {
 		message := "No data found"
@@ -72,5 +74,91 @@ func getRandomQuote(w http.ResponseWriter, r *http.Request) {
 	if err2 != nil {
 		message := "Error encoding JSON\n"
 		fmt.Println(message, err2.Error())
+	}
+}
+
+func getBitcoinPrice(w http.ResponseWriter, r *http.Request) {
+	enableCors(&w)
+	client := &http.Client{}
+	req, err := http.NewRequest("GET", "http", nil)
+	if err != nil {
+		message := "Error creating HTTP request:"
+		fmt.Println(message, err)
+		return
+	}
+
+	// add API NINJAS api key to the request header
+	req.Header.Add("X-CMC_PRO_API_KEY", "df32b477-7561-40df-acd0-e1bf88b709d1")
+	req.Header.Add("Accept", "application/json")
+
+	// Send the HTTP request
+	resp, err := client.Do(req)
+	if err != nil {
+		message := "Error sending HTTP request:"
+		fmt.Println(message, err.Error())
+		return
+	}
+	var bitcoinData []BitcoinResponse
+	bitcoinError := json.NewDecoder(resp.Body).Decode(&bitcoinData)
+	if bitcoinError != nil {
+		message := "Error creating JSON decoder"
+		fmt.Println(message, err.Error())
+	}
+	if len(bitcoinData) > 0 {
+		for i := 0; i < len(bitcoinData); i++ {
+			fmt.Println("Price: ", bitcoinData[i].PRICE)
+		}
+	} else {
+		message := "No data found"
+		fmt.Println(message)
+	}
+	w.Header().Set("Content-Type", "application/json")
+	encoderError := json.NewEncoder(w).Encode(bitcoinData[0])
+	if encoderError != nil {
+		message := "Error encoding JSON\n"
+		fmt.Println(message, encoderError.Error())
+	}
+}
+
+func getIlsPrice(w http.ResponseWriter, r *http.Request) {
+	enableCors(&w)
+	client := &http.Client{}
+	req, err := http.NewRequest("GET", "", nil)
+	if err != nil {
+		message := "Error creating HTTP request:"
+		fmt.Println(message, err)
+		return
+	}
+
+	// add API NINJAS api key to the request header
+	req.Header.Add("X-CMC_PRO_API_KEY", "df32b477-7561-40df-acd0-e1bf88b709d1")
+	req.Header.Add("Accept", "application/json")
+
+	// Send the HTTP request
+	resp, err := client.Do(req)
+	if err != nil {
+		message := "Error sending HTTP request:"
+		fmt.Println(message, err.Error())
+		return
+	}
+	var bitcoinData []BitcoinResponse
+	bitcoinError := json.NewDecoder(resp.Body).Decode(&bitcoinData)
+	if bitcoinError != nil {
+		message := "Error creating JSON decoder"
+		fmt.Println(message, err.Error())
+	}
+	if len(bitcoinData) > 0 {
+		for i := 0; i < len(bitcoinData); i++ {
+			fmt.Println("Price: ", bitcoinData[i].PRICE)
+		}
+	} else {
+		message := "No data found"
+		fmt.Println(message)
+	}
+	w.Header().Set("Content-Type", "application/json")
+	encoderError := json.NewEncoder(w).Encode(bitcoinData[0])
+	if encoderError != nil {
+		message := "Error encoding JSON\n"
+		fmt.Println(message, encoderError.Error())
 	}
 }
