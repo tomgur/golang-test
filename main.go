@@ -11,14 +11,17 @@ type Response struct {
 	AUTHOR   string
 	CATEGORY string
 }
-
-type BitcoinResponse struct {
-	PRICE string
+type btcResponse struct {
+	Time         string  `json:"time"`
+	AssetIDBase  string  `json:"asset_id_base"`
+	AssetIDQuote string  `json:"asset_id_quote"`
+	Rate         float64 `json:"rate"`
 }
 
 func main() {
 	port := 8080
 	http.HandleFunc("/random-quote", getRandomQuote)
+	http.HandleFunc("/bitcoin-price", getBitcoinPrice)
 	fmt.Printf("Server is running on port %d...\n", port)
 	err := http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
 	if err != nil {
@@ -80,85 +83,44 @@ func getRandomQuote(w http.ResponseWriter, r *http.Request) {
 func getBitcoinPrice(w http.ResponseWriter, r *http.Request) {
 	enableCors(&w)
 	client := &http.Client{}
-	req, err := http.NewRequest("GET", "http", nil)
+	req, err := http.NewRequest("GET", "https://rest.coinapi.io/v1/exchangerate/BTC/USD", nil)
 	if err != nil {
 		message := "Error creating HTTP request:"
 		fmt.Println(message, err)
 		return
 	}
 
-	// add API NINJAS api key to the request header
-	req.Header.Add("X-CMC_PRO_API_KEY", "df32b477-7561-40df-acd0-e1bf88b709d1")
+	req.Header.Add("X-CoinAPI-Key", "709C6CD6-EF67-4261-A974-BD5E3BDEE52F")
 	req.Header.Add("Accept", "application/json")
 
-	// Send the HTTP request
 	resp, err := client.Do(req)
 	if err != nil {
 		message := "Error sending HTTP request:"
 		fmt.Println(message, err.Error())
 		return
 	}
-	var bitcoinData []BitcoinResponse
-	bitcoinError := json.NewDecoder(resp.Body).Decode(&bitcoinData)
-	if bitcoinError != nil {
-		message := "Error creating JSON decoder"
-		fmt.Println(message, err.Error())
+	defer resp.Body.Close()
+
+	var responseData btcResponse
+
+	decoder := json.NewDecoder(resp.Body)
+	decodeErr := decoder.Decode(&responseData)
+	if decodeErr != nil {
+		message := "Error decoding JSON:"
+		fmt.Println(message, decodeErr.Error())
+		return
 	}
-	if len(bitcoinData) > 0 {
-		for i := 0; i < len(bitcoinData); i++ {
-			fmt.Println("Price: ", bitcoinData[i].PRICE)
-		}
-	} else {
-		message := "No data found"
-		fmt.Println(message)
-	}
+
+	fmt.Println("Time: ", responseData.Time)
+	fmt.Println("Asset ID Base: ", responseData.AssetIDBase)
+	fmt.Println("Asset ID Quote: ", responseData.AssetIDQuote)
+	fmt.Println("Rate: ", responseData.Rate)
+
 	w.Header().Set("Content-Type", "application/json")
-	encoderError := json.NewEncoder(w).Encode(bitcoinData[0])
+	encoderError := json.NewEncoder(w).Encode(responseData.Rate)
 	if encoderError != nil {
 		message := "Error encoding JSON\n"
 		fmt.Println(message, encoderError.Error())
 	}
-}
 
-func getIlsPrice(w http.ResponseWriter, r *http.Request) {
-	enableCors(&w)
-	client := &http.Client{}
-	req, err := http.NewRequest("GET", "", nil)
-	if err != nil {
-		message := "Error creating HTTP request:"
-		fmt.Println(message, err)
-		return
-	}
-
-	// add API NINJAS api key to the request header
-	req.Header.Add("X-CMC_PRO_API_KEY", "df32b477-7561-40df-acd0-e1bf88b709d1")
-	req.Header.Add("Accept", "application/json")
-
-	// Send the HTTP request
-	resp, err := client.Do(req)
-	if err != nil {
-		message := "Error sending HTTP request:"
-		fmt.Println(message, err.Error())
-		return
-	}
-	var bitcoinData []BitcoinResponse
-	bitcoinError := json.NewDecoder(resp.Body).Decode(&bitcoinData)
-	if bitcoinError != nil {
-		message := "Error creating JSON decoder"
-		fmt.Println(message, err.Error())
-	}
-	if len(bitcoinData) > 0 {
-		for i := 0; i < len(bitcoinData); i++ {
-			fmt.Println("Price: ", bitcoinData[i].PRICE)
-		}
-	} else {
-		message := "No data found"
-		fmt.Println(message)
-	}
-	w.Header().Set("Content-Type", "application/json")
-	encoderError := json.NewEncoder(w).Encode(bitcoinData[0])
-	if encoderError != nil {
-		message := "Error encoding JSON\n"
-		fmt.Println(message, encoderError.Error())
-	}
 }
