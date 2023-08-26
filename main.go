@@ -2,26 +2,30 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 )
 
 type Response struct {
-	QUOTE  string
-	AUTHOR string
+	QUOTE    string
+	AUTHOR   string
+	CATEGORY string
+}
+type btcResponse struct {
+	Time         string  `json:"time"`
+	AssetIDBase  string  `json:"asset_id_base"`
+	AssetIDQuote string  `json:"asset_id_quote"`
+	Rate         float64 `json:"rate"`
 }
 
 func main() {
-	http.HandleFunc("/random-quote", getRandomQuote)
 	port := 8080
+	http.HandleFunc("/random-quote", getRandomQuote)
+	http.HandleFunc("/bitcoin-price", getBitcoinPrice)
 	fmt.Printf("Server is running on port %d...\n", port)
 	err := http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
 	if err != nil {
-		err1 := errors.New("error starting server")
-		if err1 != nil {
-			fmt.Println("error starting server")
-		}
+		fmt.Println("error starting server")
 	}
 }
 
@@ -34,7 +38,7 @@ func enableCors(w *http.ResponseWriter) {
 func getRandomQuote(w http.ResponseWriter, r *http.Request) {
 	enableCors(&w)
 	client := &http.Client{}
-	req, err := http.NewRequest("GET", "https://api.api-ninjas.com/v1/quotes?category=happiness", nil)
+	req, err := http.NewRequest("GET", "https://api.api-ninjas.com/v1/quotes", nil)
 	if err != nil {
 		message := "Error creating HTTP request:"
 		fmt.Println(message, err)
@@ -56,12 +60,13 @@ func getRandomQuote(w http.ResponseWriter, r *http.Request) {
 	err1 := json.NewDecoder(resp.Body).Decode(&data)
 	if err1 != nil {
 		message := "Error creating JSON decoder"
-		fmt.Println(message, err1.Error())
+		fmt.Println(message, err.Error())
 	}
 	if len(data) > 0 {
 		for i := 0; i < len(data); i++ {
 			fmt.Println("quote: ", data[i].QUOTE)
 			fmt.Println("author: ", data[i].AUTHOR)
+			fmt.Println("category: ", data[i].CATEGORY)
 		}
 	} else {
 		message := "No data found"
@@ -73,4 +78,49 @@ func getRandomQuote(w http.ResponseWriter, r *http.Request) {
 		message := "Error encoding JSON\n"
 		fmt.Println(message, err2.Error())
 	}
+}
+
+func getBitcoinPrice(w http.ResponseWriter, r *http.Request) {
+	enableCors(&w)
+	client := &http.Client{}
+	req, err := http.NewRequest("GET", "https://rest.coinapi.io/v1/exchangerate/BTC/USD", nil)
+	if err != nil {
+		message := "Error creating HTTP request:"
+		fmt.Println(message, err)
+		return
+	}
+
+	req.Header.Add("X-CoinAPI-Key", "709C6CD6-EF67-4261-A974-BD5E3BDEE52F")
+	req.Header.Add("Accept", "application/json")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		message := "Error sending HTTP request:"
+		fmt.Println(message, err.Error())
+		return
+	}
+	defer resp.Body.Close()
+
+	var responseData btcResponse
+
+	decoder := json.NewDecoder(resp.Body)
+	decodeErr := decoder.Decode(&responseData)
+	if decodeErr != nil {
+		message := "Error decoding JSON:"
+		fmt.Println(message, decodeErr.Error())
+		return
+	}
+
+	fmt.Println("Time: ", responseData.Time)
+	fmt.Println("Asset ID Base: ", responseData.AssetIDBase)
+	fmt.Println("Asset ID Quote: ", responseData.AssetIDQuote)
+	fmt.Println("Rate: ", responseData.Rate)
+
+	w.Header().Set("Content-Type", "application/json")
+	encoderError := json.NewEncoder(w).Encode(responseData.Rate)
+	if encoderError != nil {
+		message := "Error encoding JSON\n"
+		fmt.Println(message, encoderError.Error())
+	}
+
 }
