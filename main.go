@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"net/http"
 )
 
@@ -27,6 +28,15 @@ func main() {
 	if err != nil {
 		fmt.Println("error starting server")
 	}
+}
+
+func round(num float64) int {
+	return int(num + math.Copysign(0.5, num))
+}
+
+func toFixed(num float64, precision int) float64 {
+	output := math.Pow(10, float64(precision))
+	return float64(round(num*output)) / output
 }
 
 func enableCors(w *http.ResponseWriter) {
@@ -117,7 +127,7 @@ func getBitcoinPrice(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Rate: ", responseData.Rate)
 
 	w.Header().Set("Content-Type", "application/json")
-	encoderError := json.NewEncoder(w).Encode(responseData.Rate)
+	encoderError := json.NewEncoder(w).Encode(toFixed(responseData.Rate, 2))
 	if encoderError != nil {
 		message := "Error encoding JSON\n"
 		fmt.Println(message, encoderError.Error())
