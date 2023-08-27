@@ -1,4 +1,6 @@
 .idea
 .gitignore
 package-lock.json
+package.json
 main
+node_modules
