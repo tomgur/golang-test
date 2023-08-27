@@ -1,2 +1,4 @@
 .idea
 .gitignore
+package-lock.json
+main
