@@ -13,7 +13,7 @@ function App() {
   }
   const fetchRandomQuote = async () => {
     try {
-      const response = await fetch('http://192.168.10.143:8080/random-quote');
+      const response = await fetch('https://go-backend.tomgur.me/random-quote');
       const data = await response.json();
       console.info("quote: " + data.QUOTE)
       console.info("author: " + data.AUTHOR)
@@ -29,7 +29,7 @@ function App() {
 
   const fetchBitcoinPrice = async () => {
     try {
-      const response = await fetch('http://192.168.10.143:8080/bitcoin-price');
+      const response = await fetch('https://go-backend.tomgur.me/bitcoin-price');
       const data = await response.json();
       console.info("price: " + data)
       setBitcoinPrice("$" + data);

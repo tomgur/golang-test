@@ -22,7 +22,7 @@ type btcResponse struct {
 func main() {
 	http.HandleFunc("/random-quote", getRandomQuote)
 	http.HandleFunc("/bitcoin-price", getBitcoinPrice)
-	fmt.Printf("Server is running on port %d...\n", port)
+	fmt.Printf("TLS Server is running on port 443", port)
 	certFile := "/fullchain.pem"
 	keyFile := "/privkey.pem"
 
