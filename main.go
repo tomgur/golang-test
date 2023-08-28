@@ -20,13 +20,16 @@ type btcResponse struct {
 }
 
 func main() {
-	port := 8080
 	http.HandleFunc("/random-quote", getRandomQuote)
 	http.HandleFunc("/bitcoin-price", getBitcoinPrice)
 	fmt.Printf("Server is running on port %d...\n", port)
-	err := http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
+	certFile := "/fullchain.pem"
+	keyFile := "/privkey.pem"
+
+	// Start the HTTPS server
+	err := http.ListenAndServeTLS(":443", certFile, keyFile, nil)
 	if err != nil {
-		fmt.Println("error starting server")
+		panic(err)
 	}
 }
 
