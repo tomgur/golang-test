@@ -4,6 +4,10 @@ import axios from 'axios';
 
 
 function App() {
+    window.addEventListener("load", (event) => {
+        console.log("page is fully loaded - logging out");
+        logOut();
+    });
     const [ user, setUser ] = useState([]);
     const [ profile, setProfile ] = useState([]);
     const [time, setTime] = useState(new Date());
