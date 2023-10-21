@@ -1,13 +1,20 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/joho/godotenv"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+	"log"
 	"math"
 	"net/http"
+	"os"
 )
 
-type Response struct {
+type quoteResponse struct {
 	QUOTE    string
 	AUTHOR   string
 	CATEGORY string
@@ -20,20 +27,43 @@ type btcResponse struct {
 }
 
 func main() {
-	port := 8080
+	port := "localhost:8080"
+
 	http.HandleFunc("/random-quote", getRandomQuote)
 	http.HandleFunc("/bitcoin-price", getBitcoinPrice)
+	http.HandleFunc("/api/recipe/search", searchRecipe)
+	//http.HandleFunc("/mongo/ping", cacheQuote)
 	fmt.Printf("Server is running on port %d...\n", port)
-	certFile := "/fullchain.pem"
-	keyFile := "/privkey.pem"
+	certFile := "chain.pem"
+	keyFile := "key.pem"
 
 	// Start the HTTPS server
-	err := http.ListenAndServeTLS(string(rune(port)), certFile, keyFile, nil)
+	err := http.ListenAndServeTLS(port, certFile, keyFile, nil)
 	if err != nil {
 		panic(err)
 	}
 }
 
+func pingMongo(w http.ResponseWriter, r *http.Request) {
+	// Use the SetServerAPIOptions() method to set the Stable API version to 1
+	serverAPI := options.ServerAPI(options.ServerAPIVersion1)
+	opts := options.Client().ApplyURI("mongodb+srv://tomgur80:FwuOJN5Y2Rw05X5j@cluster0.gc8xx0j.mongodb.net/?retryWrites=true&w=majority").SetServerAPIOptions(serverAPI)
+	// Create a new client and connect to the server
+	client, err := mongo.Connect(context.TODO(), opts)
+	if err != nil {
+		panic(err)
+	}
+	defer func() {
+		if err = client.Disconnect(context.TODO()); err != nil {
+			panic(err)
+		}
+	}()
+	// Send a ping to confirm a successful connection
+	if err := client.Database("admin").RunCommand(context.TODO(), bson.D{{"ping", 1}}).Err(); err != nil {
+		panic(err)
+	}
+	fmt.Println("Pinged your deployment. You successfully connected to MongoDB!")
+}
 func round(num float64) int {
 	return int(num + math.Copysign(0.5, num))
 }
@@ -47,6 +77,41 @@ func enableCors(w *http.ResponseWriter) {
 	(*w).Header().Set("Access-Control-Allow-Origin", "*")
 	(*w).Header().Set("Access-Control-Allow-Methods", "GET")
 	(*w).Header().Set("Access-Control-Allow-Headers", "Content-Type")
+}
+
+func searchRecipe(w http.ResponseWriter, r *http.Request) {
+	enableCors(&w)
+	//client := &http.Client{}
+	//
+	//return "success"
+}
+func cacheQuote(quote quoteResponse) {
+	if err := godotenv.Load(); err != nil {
+		log.Println("No .env file found")
+	}
+	var uri string
+	if uri = os.Getenv("MONGODB_URI"); uri == "" {
+		log.Fatal("You must set your 'MONGODB_URI' environment variable. See\n\t https://www.mongodb.com/docs/drivers/go/current/usage-examples/#environment-variable")
+	}
+	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(uri))
+	if err != nil {
+		panic(err)
+	}
+	defer func() {
+		if err = client.Disconnect(context.TODO()); err != nil {
+			panic(err)
+		}
+	}()
+
+	// begin insertOne
+	coll := client.Database("mui").Collection("quotes")
+
+	result, err := coll.InsertOne(context.TODO(), quote)
+	if err != nil {
+		panic(err)
+	}
+	// end insertOne
+	fmt.Println("Inserted a single document: ", result.InsertedID)
 }
 
 func getRandomQuote(w http.ResponseWriter, r *http.Request) {
@@ -70,7 +135,7 @@ func getRandomQuote(w http.ResponseWriter, r *http.Request) {
 		fmt.Println(message, err.Error())
 		return
 	}
-	var data []Response
+	var data []quoteResponse
 	err1 := json.NewDecoder(resp.Body).Decode(&data)
 	if err1 != nil {
 		message := "Error creating JSON decoder"
@@ -91,6 +156,9 @@ func getRandomQuote(w http.ResponseWriter, r *http.Request) {
 	if err2 != nil {
 		message := "Error encoding JSON\n"
 		fmt.Println(message, err2.Error())
+	}
+	for i := 0; i < len(data); i++ {
+		cacheQuote(data[i])
 	}
 }
 
