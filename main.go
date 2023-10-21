@@ -27,7 +27,7 @@ type btcResponse struct {
 }
 
 func main() {
-	port := "localhost:8080"
+	port := ":8080"
 
 	http.HandleFunc("/random-quote", getRandomQuote)
 	http.HandleFunc("/bitcoin-price", getBitcoinPrice)
